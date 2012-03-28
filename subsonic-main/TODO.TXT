@@ -5,64 +5,113 @@ Updated Dutch translation, courtesy of W. van der Heijden.
 Updated Swedish translation, courtesy of Fritte Jensen.
 Update Lucene index concurrently, not afterwards.
 Fixed missing db table indexes.
+Use Lucene for random song/album search.
+Never remove rows from media_file, set present=false instead.
+  Would make IDs really permanent
+  Simplify archiving stuff.
+  Don't need media_file_archive longer.  Copy from music_file_info when creating new rows.
+  Add lastScanned timestamp, use this to set stuff to not present after scanning.
+  Use "present" in album list and other queries. MAKE SURE THESE WORK FIRST!
+Support old-style IDs in REST API.
+Always use fast access mode in LeftController.
+  Refactor accessMode in MediaFileService.
+Create new album list type: alphabetic.
+Top Rated is broken.
+MetaDataParer.guessArtist etc: Don't return empty strings.
+Added "created" and "discNumber" to Child in REST xsd
+Update playCount, lastPlayed in Album table.
+Remove MediaFileService.getFirstChild.
+Create MediaType music, audiobook and podcast.
+
 
 TODO IN 4.7
 -----------------
-HSQL: " However, the engine always loads all rows affected during an update into the memory. This renders very
-  large updates impossible without splitting the work into smaller parts."
-Lots of org.hsqldb.DiskNode instances created.
-Many MediaFile and Logger$Entry created too.
-Using a lot of CPU when idling, but only if low on memory.
 
-[2012-03-15 13:36:26,137] ERROR SearchService - Failed to create Lucene search index.
-org.springframework.dao.TransientDataAccessResourceException: PreparedStatementCallback; SQL [select id, path, folder, type, format, title, album, artist, disc_number, track_number, year, genre, bit_rate, variable_bit_rate, duration_seconds, file_size, width, height, cover_art_path, parent_path, play_count, last_played, comment, created, last_modified, children_last_updated, present, version from media_file order by id limit ? offset ?]; out of memory; nested exception is java.sql.SQLException: out of memory
-        at org.springframework.jdbc.support.SQLStateSQLExceptionTranslator.doTranslate(SQLStateSQLExceptionTranslator.java:106)
-        at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:72)
-        at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:80)
-        at org.springframework.jdbc.support.AbstractFallbackSQLExceptionTranslator.translate(AbstractFallbackSQLExceptionTranslator.java:80)
-        at org.springframework.jdbc.core.JdbcTemplate.execute(JdbcTemplate.java:607)
-        at org.springframework.jdbc.core.JdbcTemplate.query(JdbcTemplate.java:641)
-        at org.springframework.jdbc.core.JdbcTemplate.query(JdbcTemplate.java:670)
-        at org.springframework.jdbc.core.JdbcTemplate.query(JdbcTemplate.java:678)
-        at org.springframework.jdbc.core.JdbcTemplate.query(JdbcTemplate.java:710)
-        at net.sourceforge.subsonic.dao.AbstractDao.query(AbstractDao.java:71)
-        at net.sourceforge.subsonic.dao.MediaFileDao.getMediaFiles(MediaFileDao.java:76)
-        at net.sourceforge.subsonic.service.SearchService.updateIndexes(SearchService.java:103)
-        at net.sourceforge.subsonic.service.MediaScannerService.doScanLibrary(MediaScannerService.java:159)
-        at net.sourceforge.subsonic.service.MediaScannerService.access$000(MediaScannerService.java:39)
-        at net.sourceforge.subsonic.service.MediaScannerService$2.run(MediaScannerService.java:135)
-Caused by: java.sql.SQLException: out of memory
+Starring
 
-[2012-03-15 13:41:02,967] DEBUG AbstractDao - 1.306.551  select min(id) from media_file
-[2012-03-15 13:41:05,107] DEBUG AbstractDao - 2.140.067  select max(id) from media_file
+starred_media_file
+  username
+  media_file_id
+  created
 
+starred_artist
+  username
+  artist_id
+  created
 
-Fix CPU problem when doing initial scan.
-  Will getAncestors create problems?
-Support old-style IDs in REST API.
-Improve document of REST "download" method.
-Automatically start scanning if media folders change.
+starred_album
+  username
+  album_id
+  created
+
+Cascading delete.
+Add type to getAlbumList and getAlbumList2.
+Add getStarred() (songCount, songOffset, albumCount, ....)
+Add getStarred2()
+Add star(songId, albumId, artistId)
+Add starredDate attribute to Album, Artist and MediaFile.
+StarService
+Web support.
+
+Update subsonic-tools.
+Test upgrade 4.6->4.7
+Avoid long db startup. Reduce hsql log size?
+Blacklist abusers of my email.
+
+New playlist implementation.
+  - Create database schema
+  - Cascading delete when user is deleted.
+  - Update "present" when scanning media library?
+  - Initally import existing playlists if table is empty.
+  - Change appendPlaylist and loadPlaylist page, show meta data (owner, public/private, #songs, duration, created date, comment).
+  - Create new Playlists button in top frame.
+  - managePlaylist -> Play, Download, Export (m3u), Delete, Private/Shared, Change owner
+  - Shared/private
+  - Admin can change owner.
+  - Keep existing playlist role, but make it enabled by default.
+  - REST support
+
+REST
+  - Document in api.jsp
+  - Add example links to demo server.
+  - Create example for videos.
+  - Test video streaming to Android.
+
+Shortcuts display ID3 names
+
+Encourage users to save email addresses, also for admin.  Explain why.
+Handle albums without artist. Don't create them?
+Bug: Playlist frame > Combo box > Selected songs > Add to playlist is broken.
+test that getRandomSongs doesn't return audiobooks and podcast.
+How to uniquely identify an album? Disregard artists, use all artists, or use one artist.
+Support comment and ratings for Album table.
+JSON exception with ampersand.
+minisub doesn't play.
+wget "http://localhost:8080/rest/getMusicDirectory.view?u=admin&p=admin&v=1.6&c=android&id=2f55736572732f73696e6472652f4d757369632f4c756e67732043442031000000" -O -
+wget "http://localhost:8080/rest/getArtists.view?u=admin&p=admin&v=1.6&c=android" -O -
+Test getPlaylist vs old-style IDs.
+Test that Fast access mode works.
+Move statistcs to About page?
+Include minisub
+    http://forum.subsonic.org/forum/viewtopic.php?f=8&t=7553
+
+Fix broken REST scrobbling, as reported by Ben.
+Don't throw NPE if requesting non-existent ID in REST.
+Optionally, create "Clean database" setting
+Never use fast access mode in podcast folder.
+Improve documentation of REST "download" method.
 Use media file IDs in web interface etc.
 Make it work with 64-bit Java 7.  Problem with exe4j?
-Test with a big collection on a network disk.
-Change random implementation.
-Better error message if media file not found.
+Better error message if media file not found, in main.jsp
 Document MediaFileService.
-Support per-artist cover art.
 Check file I/O.
 Optimize MediaFile getters.
-Measure time for media scanning, clean and incremental.
-Test performance of MusicFileDao.
-Test searching while createing lucene index
-Revisit MetaDataParser.isRoot()
 -
 Maintain track order for offline files in Android. Prepend track number for sortability?
 REST: Ensure that podcast dir is included.
 Star support
 
 Support ISO files.
-minisub
-  http://forum.subsonic.org/forum/viewtopic.php?f=8&t=7553
 wtv support   http://forum.subsonic.org/forum/viewtopic.php?f=2&t=7668
 Add "-map_meta_data 0:0" to transcoding?
   http://forum.subsonic.org/forum/viewtopic.php?f=3&t=3270&p=34114#p34114
@@ -140,6 +189,9 @@ Improve caching of artist list.
 
 TODO IN ANDROID 3.4
 --------------------
+Music controls in notification.
+  https://mail.google.com/mail/?ui=2&shva=1#inbox/136242ab25baddad
+Support Bluetooth play/pause buttons in ICS.
 Holo theme
   http://android-developers.blogspot.com/2012/01/holo-everywhere.html
 Update artist list in background.
@@ -147,6 +199,7 @@ ICS theme
   http://developer.android.com/design/index.html
   http://forum.subsonic.org/forum/viewtopic.php?f=5&t=8497
   https://mail.google.com/mail/?tab=cm#inbox/1344527f4abc11af
+  http://android-developers.blogspot.com/2012/01/say-goodbye-to-menu-button.html
 https://mail.google.com/mail/?tab=cm#inbox/135bb6c0d53edd42
 Browser / web page widget for Android
 
@@ -774,6 +827,10 @@ Upgrade Subsonic backend: CHANGE DATE BELOW
   scp subsonic-backend/target/subsonic-backend-*.war root@subsonic.org:/usr/local/jakarta/tomcat/webapps-2011-12-06/ROOT.war
   scp subsonic-main/target/subsonic.war              root@subsonic.org:/usr/local/jakarta/tomcat/webapps-2011-12-06/demo.war
   rsync -rlptDvP -e ssh --exclude .svn subsonic-site/src/main/webapp/  root@subsonic.org:/usr/local/jakarta/tomcat/webapps-2011-12-06/pages
+
+
+  Blacklist abusers of my email.
+
 
   Checkpoint database (db.view)
   ssh root@subsonic.org

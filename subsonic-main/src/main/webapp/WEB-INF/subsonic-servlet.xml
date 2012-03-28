@@ -96,6 +96,7 @@
         <property name="viewName" value="reload"/>
         <property name="playerService" ref="playerService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="searchService" ref="searchService"/>
         <property name="reloadFrames">
             <list>
                 <bean class="net.sourceforge.subsonic.controller.ReloadFrame">
@@ -238,6 +239,7 @@
         <property name="mediaScannerService" ref="mediaScannerService"/>
         <property name="settingsService" ref="settingsService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="searchService" ref="searchService"/>
         <property name="securityService" ref="securityService"/>
     </bean>
     <bean id="editTagsController" class="net.sourceforge.subsonic.controller.EditTagsController">
@@ -254,6 +256,8 @@
     <bean id="coverArtController" class="net.sourceforge.subsonic.controller.CoverArtController">
         <property name="securityService" ref="securityService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="artistDao" ref="artistDao"/>
+        <property name="albumDao" ref="albumDao"/>
     </bean>
     <bean id="avatarController" class="net.sourceforge.subsonic.controller.AvatarController">
         <property name="settingsService" ref="settingsService"/>
@@ -277,6 +281,7 @@
         <property name="securityService" ref="securityService"/>
         <property name="settingsService" ref="settingsService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="searchService" ref="searchService"/>
         <property name="transcodingService" ref="transcodingService"/>
         <property name="audioScrobblerService" ref="audioScrobblerService"/>
     </bean>
@@ -339,6 +344,9 @@
         <property name="lyricsService" ref="ajaxLyricsService"/>
         <property name="podcastService" ref="podcastService"/>
         <property name="shareService" ref="shareService"/>
+        <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="artistDao" ref="artistDao"/>
+        <property name="albumDao" ref="albumDao"/>
         <property name="downloadController" ref="downloadController"/>
         <property name="streamController" ref="streamController"/>
         <property name="coverArtController" ref="coverArtController"/>
