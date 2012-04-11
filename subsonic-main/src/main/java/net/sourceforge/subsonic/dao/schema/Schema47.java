@@ -66,7 +66,7 @@ public class Schema47 extends Schema {
                     "last_played datetime," +
                     "comment varchar," +
                     "created datetime not null," +
-                    "last_modified datetime not null," +
+                    "changed datetime not null," +
                     "last_scanned datetime not null," +
                     "children_last_updated datetime not null," +
                     "present boolean not null," +
@@ -127,6 +127,99 @@ public class Schema47 extends Schema {
             template.execute("create index idx_album_present on album(present)");
 
             LOG.info("Database table 'album' was created successfully.");
+        }
+
+        if (!tableExists(template, "starred_media_file")) {
+            LOG.info("Database table 'starred_media_file' not found.  Creating it.");
+            template.execute("create table starred_media_file (" +
+                    "id identity," +
+                    "media_file_id int not null," +
+                    "username varchar not null," +
+                    "created datetime not null," +
+                    "foreign key (media_file_id) references media_file(id) on delete cascade,"+
+                    "foreign key (username) references user(username) on delete cascade," +
+                    "unique (media_file_id, username))");
+
+            template.execute("create index idx_starred_media_file_media_file_id on starred_media_file(media_file_id)");
+            template.execute("create index idx_starred_media_file_username on starred_media_file(username)");
+
+            LOG.info("Database table 'starred_media_file' was created successfully.");
+        }
+
+        if (!tableExists(template, "starred_album")) {
+            LOG.info("Database table 'starred_album' not found.  Creating it.");
+            template.execute("create table starred_album (" +
+                    "id identity," +
+                    "album_id int not null," +
+                    "username varchar not null," +
+                    "created datetime not null," +
+                    "foreign key (album_id) references album(id) on delete cascade," +
+                    "foreign key (username) references user(username) on delete cascade," +
+                    "unique (album_id, username))");
+
+            template.execute("create index idx_starred_album_album_id on starred_album(album_id)");
+            template.execute("create index idx_starred_album_username on starred_album(username)");
+
+            LOG.info("Database table 'starred_album' was created successfully.");
+        }
+
+        if (!tableExists(template, "starred_artist")) {
+            LOG.info("Database table 'starred_artist' not found.  Creating it.");
+            template.execute("create table starred_artist (" +
+                    "id identity," +
+                    "artist_id int not null," +
+                    "username varchar not null," +
+                    "created datetime not null," +
+                    "foreign key (artist_id) references artist(id) on delete cascade,"+
+                    "foreign key (username) references user(username) on delete cascade," +
+                    "unique (artist_id, username))");
+
+            template.execute("create index idx_starred_artist_artist_id on starred_artist(artist_id)");
+            template.execute("create index idx_starred_artist_username on starred_artist(username)");
+
+            LOG.info("Database table 'starred_artist' was created successfully.");
+        }
+
+        if (!tableExists(template, "playlist")) {
+            LOG.info("Database table 'playlist' not found.  Creating it.");
+            template.execute("create table playlist (" +
+                    "id identity," +
+                    "username varchar not null," +
+                    "is_public boolean not null," +
+                    "name varchar not null," +
+                    "comment varchar," +
+                    "file_count int default 0 not null," +
+                    "duration_seconds int default 0 not null," +
+                    "created datetime not null," +
+                    "changed datetime not null," +
+                    "foreign key (username) references user(username) on delete cascade)");
+
+            LOG.info("Database table 'playlist' was created successfully.");
+        }
+
+        if (!tableExists(template, "playlist_file")) {
+            LOG.info("Database table 'playlist_file' not found.  Creating it.");
+            template.execute("create cached table playlist_file (" +
+                    "id identity," +
+                    "playlist_id int not null," +
+                    "media_file_id int not null," +
+                    "foreign key (playlist_id) references playlist(id) on delete cascade," +
+                    "foreign key (media_file_id) references media_file(id) on delete cascade)");
+
+            LOG.info("Database table 'playlist_file' was created successfully.");
+        }
+
+        if (!tableExists(template, "playlist_user")) {
+            LOG.info("Database table 'playlist_user' not found.  Creating it.");
+            template.execute("create table playlist_user (" +
+                    "id identity," +
+                    "playlist_id int not null," +
+                    "username varchar not null," +
+                    "unique(playlist_id, username)," +
+                    "foreign key (playlist_id) references playlist(id) on delete cascade," +
+                    "foreign key (username) references user(username) on delete cascade)");
+
+            LOG.info("Database table 'playlist_user' was created successfully.");
         }
     }
 }

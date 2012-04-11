@@ -3,7 +3,7 @@
 <html><head>
     <%@ include file="head.jsp" %>
     <script type="text/javascript" src="<c:url value="/dwr/interface/nowPlayingService.js"/>"></script>
-    <script type="text/javascript" src="<c:url value="/dwr/interface/playlistService.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/playQueueService.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/dwr/util.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/prototype.js"/>"></script>
@@ -90,7 +90,7 @@
     }
 
     function getPlaylist() {
-        playlistService.getPlaylist(playlistCallback);
+        playQueueService.getPlaylist(playlistCallback);
     }
 
     function onClear() {
@@ -99,17 +99,17 @@
         ok = confirm("<fmt:message key="playlist.confirmclear"/>");
     </c:if>
         if (ok) {
-            playlistService.clear(playlistCallback);
+            playQueueService.clear(playlistCallback);
         }
     }
     function onStart() {
-        playlistService.start(playlistCallback);
+        playQueueService.start(playlistCallback);
     }
     function onStop() {
-        playlistService.stop(playlistCallback);
+        playQueueService.stop(playlistCallback);
     }
     function onGain(gain) {
-        playlistService.setGain(gain);
+        playQueueService.setGain(gain);
     }
     function onSkip(index) {
     <c:choose>
@@ -118,7 +118,7 @@
     </c:when>
     <c:otherwise>
         currentStreamUrl = songs[index].streamUrl;
-        playlistService.skip(index, playlistCallback);
+        playQueueService.skip(index, playlistCallback);
     </c:otherwise>
     </c:choose>
     }
@@ -132,23 +132,26 @@
     function onPrevious() {
         skip(parseInt(getCurrentSongIndex()) - 1);
     }
-    function onPlay(path) {
+    function onPlay(id) {
         startPlayer = true;
-        playlistService.play(path, playlistCallback);
+        playQueueService.play(id, playlistCallback);
     }
-    function onPlayRandom(path, count) {
+    function onPlayRandom(id, count) {
         startPlayer = true;
-        playlistService.playRandom(path, count, playlistCallback);
+        playQueueService.playRandom(id, count, playlistCallback);
     }
-    function onAdd(path) {
+    function onAdd(id) {
         startPlayer = false;
-        playlistService.add(path, playlistCallback);
+        playQueueService.add(id, playlistCallback);
     }
     function onShuffle() {
-        playlistService.shuffle(playlistCallback);
+        playQueueService.shuffle(playlistCallback);
+    }
+    function onStar(index) {
+        playQueueService.toggleStar(index, playlistCallback);
     }
     function onRemove(index) {
-        playlistService.remove(index, playlistCallback);
+        playQueueService.remove(index, playlistCallback);
     }
     function onRemoveSelected() {
         var indexes = new Array();
@@ -159,29 +162,29 @@
                 indexes[counter++] = i;
             }
         }
-        playlistService.removeMany(indexes, playlistCallback);
+        playQueueService.removeMany(indexes, playlistCallback);
     }
 
     function onUp(index) {
-        playlistService.up(index, playlistCallback);
+        playQueueService.up(index, playlistCallback);
     }
     function onDown(index) {
-        playlistService.down(index, playlistCallback);
+        playQueueService.down(index, playlistCallback);
     }
     function onToggleRepeat() {
-        playlistService.toggleRepeat(playlistCallback);
+        playQueueService.toggleRepeat(playlistCallback);
     }
     function onUndo() {
-        playlistService.undo(playlistCallback);
+        playQueueService.undo(playlistCallback);
     }
     function onSortByTrack() {
-        playlistService.sortByTrack(playlistCallback);
+        playQueueService.sortByTrack(playlistCallback);
     }
     function onSortByArtist() {
-        playlistService.sortByArtist(playlistCallback);
+        playQueueService.sortByArtist(playlistCallback);
     }
     function onSortByAlbum() {
-        playlistService.sortByAlbum(playlistCallback);
+        playQueueService.sortByAlbum(playlistCallback);
     }
 
     function playlistCallback(playlist) {
@@ -221,7 +224,11 @@
             if ($("trackNumber" + id)) {
                 dwr.util.setValue("trackNumber" + id, song.trackNumber);
             }
-
+            if (song.starred) {
+                $("starSong" + id).src = "<spring:theme code='ratingOnImage'/>";
+            } else {
+                $("starSong" + id).src = "<spring:theme code='ratingOffImage'/>";
+            } 
             if ($("currentImage" + id) && song.streamUrl == currentStreamUrl) {
                 $("currentImage" + id).show();
             }
@@ -407,7 +414,7 @@
     <table style="white-space:nowrap;">
         <tr style="white-space:nowrap;">
             <c:if test="${model.user.settingsRole}">
-                <td><select name="player" onchange="location='playlist.view?player=' + options[selectedIndex].value;">
+                <td><select name="player" onchange="location='playQueue.view?player=' + options[selectedIndex].value;">
                     <c:forEach items="${model.players}" var="player">
                         <option ${player.id eq model.player.id ? "selected" : ""} value="${player.id}">${player.shortDescription}</option>
                     </c:forEach>
@@ -506,6 +513,9 @@
 <table style="border-collapse:collapse;white-space:nowrap;">
     <tbody id="playlistBody">
         <tr id="pattern" style="display:none;margin:0;padding:0;border:0">
+            <td class="bgcolor2"><a href="javascript:noop()">
+                <img id="starSong" onclick="onStar(this.id.substring(8) - 1)" src="<spring:theme code="ratingOffImage"/>"
+                     alt="" title=""></a></td>
             <td class="bgcolor2"><a href="javascript:noop()">
                 <img id="removeSong" onclick="onRemove(this.id.substring(10) - 1)" src="<spring:theme code="removeImage"/>"
                      alt="<fmt:message key="playlist.remove"/>" title="<fmt:message key="playlist.remove"/>"></a></td>

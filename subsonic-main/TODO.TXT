@@ -1,3 +1,4 @@
+
 DONE IN 4.7
 -----------------
 Improvements to lyrics search, courtesy of Juan Carlos Díaz.
@@ -15,7 +16,7 @@ Never remove rows from media_file, set present=false instead.
 Support old-style IDs in REST API.
 Always use fast access mode in LeftController.
   Refactor accessMode in MediaFileService.
-Create new album list type: alphabetic.
+Create new album list type: alphabetic, starred
 Top Rated is broken.
 MetaDataParer.guessArtist etc: Don't return empty strings.
 Added "created" and "discNumber" to Child in REST xsd
@@ -23,53 +24,44 @@ Update playCount, lastPlayed in Album table.
 Remove MediaFileService.getFirstChild.
 Create MediaType music, audiobook and podcast.
 
-
 TODO IN 4.7
 -----------------
+Add path to album table. Use to determine if songs belong to the same album.
+Review how to look up album for a song.
+Find nicer icons.
+Video player broken.
+Test REST video
+REST: Consider changing method names and type to *Id3.
 
-Starring
-
-starred_media_file
-  username
-  media_file_id
-  created
-
-starred_artist
-  username
-  artist_id
-  created
-
-starred_album
-  username
-  album_id
-  created
-
-Cascading delete.
-Add type to getAlbumList and getAlbumList2.
-Add getStarred() (songCount, songOffset, albumCount, ....)
-Add getStarred2()
-Add star(songId, albumId, artistId)
-Add starredDate attribute to Album, Artist and MediaFile.
-StarService
-Web support.
+Eliminate HomeController.Album.
+Use id in web interface.
 
 Update subsonic-tools.
 Test upgrade 4.6->4.7
 Avoid long db startup. Reduce hsql log size?
 Blacklist abusers of my email.
+Update apps to include PlayBook version.
 
-New playlist implementation.
-  - Create database schema
-  - Cascading delete when user is deleted.
+  - Make playlist.jsp
+  - "Play queue -> Save as playlist" should create a new playlist with automatic name (Play Queue 10/4 22:43)
+  - "Add to playlist" should show list of existing playlists.
+  - "Add to new playlist" should create an automatic name.
+  - Improve usability when saving play queue as playlist e.g., if using an existing name.  Use ajax?
+  - Change "dir" usage in LoadPlaylistController.
+  - Rename RandomPlaylistController, playlist.jsp, PlaylistService.
   - Update "present" when scanning media library?
   - Initally import existing playlists if table is empty.
   - Change appendPlaylist and loadPlaylist page, show meta data (owner, public/private, #songs, duration, created date, comment).
   - Create new Playlists button in top frame.
-  - managePlaylist -> Play, Download, Export (m3u), Delete, Private/Shared, Change owner
-  - Shared/private
-  - Admin can change owner.
-  - Keep existing playlist role, but make it enabled by default.
-  - REST support
+  - managePlaylist -> Play, Download, Export (m3u), Delete, Private/Shared
+  - Keep existing playlist role, but make it enabled by default.  Or remove it?
+  - REST support, add/removePlaylistUser.
+  - REST support, modify playlist metadata.
+  - Remove settings for playlist folder.
+  - Import/export feature.
+  - Retest wap and podcast playlist stuff.
+  - Playlist support in StreamController.
+  - Show message if nothing is starred.
 
 REST
   - Document in api.jsp
@@ -83,12 +75,10 @@ Encourage users to save email addresses, also for admin.  Explain why.
 Handle albums without artist. Don't create them?
 Bug: Playlist frame > Combo box > Selected songs > Add to playlist is broken.
 test that getRandomSongs doesn't return audiobooks and podcast.
-How to uniquely identify an album? Disregard artists, use all artists, or use one artist.
+How to uniquely identify an album? Disregard artists, use all artists, or use one artist, or use Various Artists.
 Support comment and ratings for Album table.
 JSON exception with ampersand.
 minisub doesn't play.
-wget "http://localhost:8080/rest/getMusicDirectory.view?u=admin&p=admin&v=1.6&c=android&id=2f55736572732f73696e6472652f4d757369632f4c756e67732043442031000000" -O -
-wget "http://localhost:8080/rest/getArtists.view?u=admin&p=admin&v=1.6&c=android" -O -
 Test getPlaylist vs old-style IDs.
 Test that Fast access mode works.
 Move statistcs to About page?
@@ -100,7 +90,6 @@ Don't throw NPE if requesting non-existent ID in REST.
 Optionally, create "Clean database" setting
 Never use fast access mode in podcast folder.
 Improve documentation of REST "download" method.
-Use media file IDs in web interface etc.
 Make it work with 64-bit Java 7.  Problem with exe4j?
 Better error message if media file not found, in main.jsp
 Document MediaFileService.
@@ -189,9 +178,11 @@ Improve caching of artist list.
 
 TODO IN ANDROID 3.4
 --------------------
+Support Bluetooth play/pause buttons in ICS.
+Problem if underscore/dash in server name.
+  https://mail.google.com/mail/?shva=1#inbox/1365ef6ddc03e31a
 Music controls in notification.
   https://mail.google.com/mail/?ui=2&shva=1#inbox/136242ab25baddad
-Support Bluetooth play/pause buttons in ICS.
 Holo theme
   http://android-developers.blogspot.com/2012/01/holo-everywhere.html
 Update artist list in background.
@@ -964,9 +955,9 @@ Ogmunds vei 11
 0488 Oslo
 Norway
 
-Account number: 97223688407
 IBAN number: NO7297223688407
 SWIFT/BIC code: DNBANOKK
+Account number: 97223688407
 
 Bank address:
 DnB NOR

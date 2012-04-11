@@ -118,7 +118,7 @@ public class MediaFileService {
     }
 
     private MediaFile checkLastModified(MediaFile mediaFile, boolean useFastCache) {
-        if (useFastCache || mediaFile.getLastModified().getTime() >= FileUtil.lastModified(mediaFile.getFile())) {
+        if (useFastCache || mediaFile.getChanged().getTime() >= FileUtil.lastModified(mediaFile.getFile())) {
             return mediaFile;
         }
         mediaFile = createMediaFile(mediaFile.getFile());
@@ -272,6 +272,18 @@ public class MediaFileService {
     }
 
     /**
+     * Returns the most recently starred albums.
+     *
+     * @param offset   Number of albums to skip.
+     * @param count    Maximum number of albums to return.
+     * @param username Returns albums starred by this user.
+     * @return The most recently starred albums for this user.
+     */
+    public List<MediaFile> getStarredAlbums(int offset, int count, String username) {
+        return mediaFileDao.getStarredAlbums(offset, count, username);
+    }
+
+    /**
      * Returns albums in alphabetial order.
      *
      * @param offset Number of albums to skip.
@@ -282,10 +294,25 @@ public class MediaFileService {
         return mediaFileDao.getAlphabetialAlbums(offset, count);
     }
 
+    public Date getMediaFileStarredDate(int id, String username) {
+        return mediaFileDao.getMediaFileStarredDate(id, username);
+    }
+
+    public void populateStarredDate(List<MediaFile> mediaFiles, String username) {
+        for (MediaFile mediaFile : mediaFiles) {
+            populateStarredDate(mediaFile, username);
+        }
+    }
+
+    public void populateStarredDate(MediaFile mediaFile, String username) {
+        Date starredDate = mediaFileDao.getMediaFileStarredDate(mediaFile.getId(), username);
+        mediaFile.setStarredDate(starredDate);
+    }
+
     private void updateChildren(MediaFile parent) {
 
         // Check timestamps.
-        if (parent.getChildrenLastUpdated().getTime() >= parent.getLastModified().getTime()) {
+        if (parent.getChildrenLastUpdated().getTime() >= parent.getChanged().getTime()) {
             return;
         }
 
@@ -309,7 +336,7 @@ public class MediaFileService {
         }
 
         // Update timestamp in parent.
-        parent.setChildrenLastUpdated(parent.getLastModified());
+        parent.setChildrenLastUpdated(parent.getChanged());
         parent.setPresent(true);
         mediaFileDao.createOrUpdateMediaFile(parent);
     }
@@ -362,7 +389,7 @@ public class MediaFileService {
         mediaFile.setPath(file.getPath());
         mediaFile.setFolder(securityService.getRootFolderForFile(file));
         mediaFile.setParentPath(file.getParent());
-        mediaFile.setLastModified(lastModified);
+        mediaFile.setChanged(lastModified);
         mediaFile.setLastScanned(new Date());
         mediaFile.setPlayCount(0);
         mediaFile.setChildrenLastUpdated(new Date(0));

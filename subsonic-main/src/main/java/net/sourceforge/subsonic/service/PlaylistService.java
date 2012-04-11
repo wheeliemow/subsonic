@@ -19,10 +19,12 @@
 package net.sourceforge.subsonic.service;
 
 import net.sourceforge.subsonic.Logger;
+import net.sourceforge.subsonic.dao.MediaFileDao;
+import net.sourceforge.subsonic.dao.PlaylistDao;
 import net.sourceforge.subsonic.domain.MediaFile;
+import net.sourceforge.subsonic.domain.PlayQueue;
 import net.sourceforge.subsonic.domain.Playlist;
-import net.sourceforge.subsonic.util.FileUtil;
-import net.sourceforge.subsonic.util.StringUtil;
+
 import org.apache.commons.lang.StringEscapeUtils;
 import org.jdom.Document;
 import org.jdom.Element;
@@ -32,10 +34,8 @@ import org.jdom.input.SAXBuilder;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -45,127 +45,58 @@ import java.util.regex.Pattern;
  * Provides services for loading and saving playlists to and from persistent storage.
  *
  * @author Sindre Mehus
- * @see Playlist
+ * @see net.sourceforge.subsonic.domain.PlayQueue
  */
 public class PlaylistService {
 
     private static final Logger LOG = Logger.getLogger(PlaylistService.class);
-    private SettingsService settingsService;
-    private SecurityService securityService;
-    private MediaFileService mediaFileService;
+    private MediaFileDao mediaFileDao;
+    private PlaylistDao playlistDao;
 
-    /**
-     * Saves the given playlist to persistent storage.
-     *
-     * @param playlist The playlist to save.
-     * @throws IOException If an I/O error occurs.
-     */
-    public void savePlaylist(Playlist playlist) throws IOException {
-        String name = playlist.getName();
+    public List<Playlist> getPlaylistsForUser(String username) {
+        return playlistDao.getPlaylistsForUser(username);
+    }
 
-        // Add m3u suffix if no other suitable suffix is given.
-        if (!new PlaylistFilenameFilter().accept(getPlaylistDirectory(), name)) {
-            name += ".m3u";
-            playlist.setName(name);
+    public Playlist getPlaylist(int id) {
+        return playlistDao.getPlaylist(id);
+    }
+
+    public List<MediaFile> getFilesInPlaylist(int id) {
+        return mediaFileDao.getFilesInPlaylist(id);
+    }
+
+    public void setFilesInPlaylist(int id, List<MediaFile> files) {
+        playlistDao.setFilesInPlaylist(id, files);
+    }
+
+    public void createPlaylist(Playlist playlist) {
+        playlistDao.createPlaylist(playlist);
+    }
+
+    public boolean isReadAllowed(Playlist playlist, String username) {
+        if (username == null) {
+            return false;
         }
-
-        File playlistFile = new File(getPlaylistDirectory(), name);
-        checkAccess(playlistFile);
-
-        PrintWriter writer = new PrintWriter(playlistFile, StringUtil.ENCODING_UTF8);
-
-        try {
-            PlaylistFormat format = PlaylistFormat.getPlaylistFormat(playlistFile);
-            format.savePlaylist(playlist, writer);
-        } finally {
-            writer.close();
+        if (username.equals(playlist.getUsername()) || playlist.isPublic()) {
+            return true;
         }
+        return playlistDao.getPlaylistUsers(playlist.getId()).contains(username);
     }
 
-    /**
-     * Loads a named playlist from persistent storage and into the provided playlist instance.
-     *
-     * @param playlist The playlist to populate. Any existing entries in the playlist will
-     *                 be removed.
-     * @param name     The name of a previously persisted playlist.
-     * @throws IOException If an I/O error occurs.
-     */
-    public void loadPlaylist(Playlist playlist, String name) throws IOException {
-        File playlistFile = new File(getPlaylistDirectory(), name);
-        checkAccess(playlistFile);
-
-        playlist.setName(name);
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(playlistFile), StringUtil.ENCODING_UTF8));
-        try {
-            PlaylistFormat format = PlaylistFormat.getPlaylistFormat(playlistFile);
-            format.loadPlaylist(playlist, reader, mediaFileService);
-        } finally {
-            reader.close();
-        }
+    public boolean isWriteAllowed(Playlist playlist, String username) {
+        return username != null && username.equals(playlist.getUsername());
     }
 
-    /**
-     * Returns a list of all previously saved playlists.
-     *
-     * @return A list of all previously saved playlists.
-     */
-    public File[] getSavedPlaylists() {
-        return FileUtil.listFiles(getPlaylistDirectory(), new PlaylistFilenameFilter(), true);
+    public void deletePlaylist(int id) {
+        playlistDao.deletePlaylist(id);
     }
 
-    /**
-     * Returns the saved playlist with the given name.
-     *
-     * @param name The name of the playlist.
-     * @return The playlist, or <code>null</code> if not found.
-     */
-    public File getSavedPlaylist(String name) {
-        for (File file : getSavedPlaylists()) {
-            if (name.equals(file.getName())) {
-                return file;
-            }
-        }
-        return null;
+    public void setPlaylistDao(PlaylistDao playlistDao) {
+        this.playlistDao = playlistDao;
     }
 
-    /**
-     * Deletes the named playlist from persistent storage.
-     *
-     * @param name The name of the playlist to delete.
-     * @throws IOException If an I/O error occurs.
-     */
-    public void deletePlaylist(String name) throws IOException {
-        File file = new File(getPlaylistDirectory(), name);
-        checkAccess(file);
-        file.delete();
-    }
-
-    /**
-     * Returns the directory where playlists are stored.
-     *
-     * @return The directory where playlists are stored.
-     */
-    public File getPlaylistDirectory() {
-        return new File(settingsService.getPlaylistFolder());
-    }
-
-    private void checkAccess(File file) {
-        if (!securityService.isWriteAllowed(file)) {
-            throw new SecurityException("Access denied to file " + file);
-        }
-    }
-
-    public void setSettingsService(SettingsService settingsService) {
-        this.settingsService = settingsService;
-    }
-
-    public void setSecurityService(SecurityService securityService) {
-        this.securityService = securityService;
-    }
-
-    public void setMediaFileService(MediaFileService mediaFileService) {
-        this.mediaFileService = mediaFileService;
+    public void setMediaFileDao(MediaFileDao mediaFileDao) {
+        this.mediaFileDao = mediaFileDao;
     }
 
     private static class PlaylistFilenameFilter implements FilenameFilter {
@@ -179,9 +110,9 @@ public class PlaylistService {
      * Abstract superclass for playlist formats.
      */
     private abstract static class PlaylistFormat {
-        public abstract void loadPlaylist(Playlist playlist, BufferedReader reader, MediaFileService mediaFileService) throws IOException;
+        public abstract void loadPlaylist(PlayQueue playQueue, BufferedReader reader, MediaFileService mediaFileService) throws IOException;
 
-        public abstract void savePlaylist(Playlist playlist, PrintWriter writer) throws IOException;
+        public abstract void savePlaylist(PlayQueue playQueue, PrintWriter writer) throws IOException;
 
         public static PlaylistFormat getPlaylistFormat(File file) {
             String name = file.getName().toLowerCase();
@@ -202,15 +133,15 @@ public class PlaylistService {
      * Implementation of M3U playlist format.
      */
     private static class M3UFormat extends PlaylistFormat {
-        public void loadPlaylist(Playlist playlist, BufferedReader reader, MediaFileService mediaFileService) throws IOException {
-            playlist.clear();
+        public void loadPlaylist(PlayQueue playQueue, BufferedReader reader, MediaFileService mediaFileService) throws IOException {
+            playQueue.clear();
             String line = reader.readLine();
             while (line != null) {
                 if (!line.startsWith("#")) {
                     try {
                         MediaFile file = mediaFileService.getMediaFile(line);
                         if (file.getFile().exists()) {
-                            playlist.addFiles(true, file);
+                            playQueue.addFiles(true, file);
                         }
                     } catch (SecurityException x) {
                         LOG.warn(x.getMessage(), x);
@@ -220,13 +151,13 @@ public class PlaylistService {
             }
         }
 
-        public void savePlaylist(Playlist playlist, PrintWriter writer) throws IOException {
+        public void savePlaylist(PlayQueue playQueue, PrintWriter writer) throws IOException {
             writer.println("#EXTM3U");
-            for (MediaFile file : playlist.getFiles()) {
+            for (MediaFile file : playQueue.getFiles()) {
                 writer.println(file.getPath());
             }
             if (writer.checkError()) {
-                throw new IOException("Error when writing playlist " + playlist.getName());
+                throw new IOException("Error when writing playlist");
             }
         }
     }
@@ -235,8 +166,8 @@ public class PlaylistService {
      * Implementation of PLS playlist format.
      */
     private static class PLSFormat extends PlaylistFormat {
-        public void loadPlaylist(Playlist playlist, BufferedReader reader, MediaFileService mediaFileService) throws IOException {
-            playlist.clear();
+        public void loadPlaylist(PlayQueue playQueue, BufferedReader reader, MediaFileService mediaFileService) throws IOException {
+            playQueue.clear();
 
             Pattern pattern = Pattern.compile("^File\\d+=(.*)$");
             String line = reader.readLine();
@@ -247,7 +178,7 @@ public class PlaylistService {
                     try {
                         MediaFile file = mediaFileService.getMediaFile(matcher.group(1));
                         if (file.getFile().exists()) {
-                            playlist.addFiles(true, file);
+                            playQueue.addFiles(true, file);
                         }
                     } catch (SecurityException x) {
                         LOG.warn(x.getMessage(), x);
@@ -257,11 +188,11 @@ public class PlaylistService {
             }
         }
 
-        public void savePlaylist(Playlist playlist, PrintWriter writer) throws IOException {
+        public void savePlaylist(PlayQueue playQueue, PrintWriter writer) throws IOException {
             writer.println("[playlist]");
             int counter = 0;
 
-            for (MediaFile file : playlist.getFiles()) {
+            for (MediaFile file : playQueue.getFiles()) {
                 counter++;
                 writer.println("File" + counter + '=' + file.getPath());
             }
@@ -269,7 +200,7 @@ public class PlaylistService {
             writer.println("Version=2");
 
             if (writer.checkError()) {
-                throw new IOException("Error when writing playlist " + playlist.getName());
+                throw new IOException("Error when writing playlist.");
             }
         }
     }
@@ -278,8 +209,8 @@ public class PlaylistService {
      * Implementation of XSPF (http://www.xspf.org/) playlist format.
      */
     private static class XSPFFormat extends PlaylistFormat {
-        public void loadPlaylist(Playlist playlist, BufferedReader reader, MediaFileService mediaFileService) throws IOException {
-            playlist.clear();
+        public void loadPlaylist(PlayQueue playQueue, BufferedReader reader, MediaFileService mediaFileService) throws IOException {
+            playQueue.clear();
 
             SAXBuilder builder = new SAXBuilder();
             Document document;
@@ -287,7 +218,7 @@ public class PlaylistService {
                 document = builder.build(reader);
             } catch (JDOMException x) {
                 LOG.warn("Failed to parse XSPF playlist.", x);
-                throw new IOException("Failed to parse XSPF playlist " + playlist.getName());
+                throw new IOException("Failed to parse XSPF playlist.");
             }
 
             Element root = document.getRootElement();
@@ -303,7 +234,7 @@ public class PlaylistService {
                     try {
                         MediaFile file = mediaFileService.getMediaFile(location);
                         if (file.getFile().exists()) {
-                            playlist.addFiles(true, file);
+                            playQueue.addFiles(true, file);
                         }
                     } catch (SecurityException x) {
                         LOG.warn(x.getMessage(), x);
@@ -312,19 +243,19 @@ public class PlaylistService {
             }
         }
 
-        public void savePlaylist(Playlist playlist, PrintWriter writer) throws IOException {
+        public void savePlaylist(PlayQueue playQueue, PrintWriter writer) throws IOException {
             writer.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             writer.println("<playlist version=\"1\" xmlns=\"http://xspf.org/ns/0/\">");
             writer.println("    <trackList>");
 
-            for (MediaFile file : playlist.getFiles()) {
+            for (MediaFile file : playQueue.getFiles()) {
                 writer.println("        <track><location>file://" + StringEscapeUtils.escapeXml(file.getPath()) + "</location></track>");
             }
             writer.println("    </trackList>");
             writer.println("</playlist>");
 
             if (writer.checkError()) {
-                throw new IOException("Error when writing playlist " + playlist.getName());
+                throw new IOException("Error when writing playlist.");
             }
         }
     }

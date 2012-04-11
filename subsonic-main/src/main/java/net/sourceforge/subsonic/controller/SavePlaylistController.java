@@ -26,9 +26,10 @@ import org.springframework.web.servlet.mvc.*;
 import org.springframework.web.servlet.view.*;
 
 import javax.servlet.http.*;
+import java.util.Date;
 
 /**
- * Controller for saving playlists.
+ * Controller for saving the play queue as a playlist.
  *
  * @author Sindre Mehus
  */
@@ -36,19 +37,29 @@ public class SavePlaylistController extends SimpleFormController {
 
     private PlaylistService playlistService;
     private PlayerService playerService;
+    private SecurityService securityService;
 
     public ModelAndView onSubmit(Object comm) throws Exception {
         SavePlaylistCommand command = (SavePlaylistCommand) comm;
-        Playlist playlist = command.getPlaylist();
-        playlist.setName(command.getName() + '.' + command.getSuffix());
-        playlistService.savePlaylist(playlist);
+        PlayQueue playQueue = command.getPlayQueue();
 
+        Playlist playlist = new Playlist();
+        playlist.setName(command.getName());
+        playlist.setCreated(new Date());
+        playlist.setChanged(new Date());
+        playlist.setPublic(false);
+        playlist.setUsername(command.getUsername());
+
+        playlistService.createPlaylist(playlist);
+        playlistService.setFilesInPlaylist(playlist.getId(), playQueue.getFiles());
+
+        playQueue.setName(command.getName());
         return new ModelAndView(new RedirectView(getSuccessView()));
     }
 
     protected Object formBackingObject(HttpServletRequest request) throws Exception {
         Player player = playerService.getPlayer(request, null);
-        return new SavePlaylistCommand(player.getPlaylist());
+        return new SavePlaylistCommand(player.getPlayQueue(), securityService.getCurrentUsername(request));
     }
 
     public void setPlaylistService(PlaylistService playlistService) {
@@ -57,5 +68,9 @@ public class SavePlaylistController extends SimpleFormController {
 
     public void setPlayerService(PlayerService playerService) {
         this.playerService = playerService;
+    }
+
+    public void setSecurityService(SecurityService securityService) {
+        this.securityService = securityService;
     }
 }

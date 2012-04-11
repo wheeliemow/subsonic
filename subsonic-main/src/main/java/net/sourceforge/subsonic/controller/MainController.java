@@ -77,7 +77,11 @@ public class MainController extends ParameterizableViewController {
         }
 
         List<MediaFile> children = mediaFiles.size() == 1 ? mediaFileService.getChildrenOf(dir, true, true, true) : getMultiFolderChildren(mediaFiles);
-        UserSettings userSettings = settingsService.getUserSettings(securityService.getCurrentUsername(request));
+        String username = securityService.getCurrentUsername(request);
+        UserSettings userSettings = settingsService.getUserSettings(username);
+
+        mediaFileService.populateStarredDate(dir, username);
+        mediaFileService.populateStarredDate(children, username);
 
         map.put("dir", dir);
         map.put("ancestors", getAncestors(dir));
@@ -103,7 +107,6 @@ public class MainController extends ParameterizableViewController {
             // Happens if Podcast directory is outside music folder.
         }
 
-        String username = securityService.getCurrentUsername(request);
         Integer userRating = ratingService.getRatingForUser(username, dir);
         Double averageRating = ratingService.getAverageRating(dir);
 
@@ -117,17 +120,17 @@ public class MainController extends ParameterizableViewController {
 
         map.put("userRating", 10 * userRating);
         map.put("averageRating", Math.round(10.0D * averageRating));
+        map.put("starred", mediaFileService.getMediaFileStarredDate(dir.getId(), username) != null);
 
         CoverArtScheme scheme = player.getCoverArtScheme();
         if (scheme != CoverArtScheme.OFF) {
-            List<File> coverArts = getCoverArts(dir, children);
+            List<MediaFile> coverArts = getCoverArts(dir, children);
             int size = coverArts.size() > 1 ? scheme.getSize() : scheme.getSize() * 2;
             map.put("coverArts", coverArts);
             map.put("coverArtSize", size);
             if (coverArts.isEmpty() && dir.isAlbum()) {
                 map.put("showGenericCoverArt", true);
             }
-
         }
 
         setPreviousAndNextAlbums(dir, map);
@@ -172,27 +175,23 @@ public class MainController extends ParameterizableViewController {
         return null;
     }
 
-    private List<File> getCoverArts(MediaFile dir, List<MediaFile> children) throws IOException {
+    private List<MediaFile> getCoverArts(MediaFile dir, List<MediaFile> children) throws IOException {
         int limit = settingsService.getCoverArtLimit();
         if (limit == 0) {
             limit = Integer.MAX_VALUE;
         }
 
-        List<File> coverArts = new ArrayList<File>();
-        if (dir.isAlbum()) {
-            File coverArt = mediaFileService.getCoverArt(dir);
-            if (coverArt != null) {
-                coverArts.add(coverArt);
-            }
+        List<MediaFile> coverArts = new ArrayList<MediaFile>();
+        if (dir.isAlbum() && dir.getCoverArtPath() != null) {
+            coverArts.add(dir);
         } else {
             for (MediaFile child : children) {
-                if (child.isDirectory()) {
-                    File coverArt = mediaFileService.getCoverArt(child);
-                    if (coverArt != null) {
-                        coverArts.add(coverArt);
-                        if (coverArts.size() > limit) {
-                            break;
-                        }
+                if (child.isAlbum()) {
+                    if (child.getCoverArtPath() != null) {
+                        coverArts.add(child);
+                    }
+                    if (coverArts.size() > limit) {
+                        break;
                     }
                 }
             }

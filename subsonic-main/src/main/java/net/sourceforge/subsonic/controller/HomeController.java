@@ -33,9 +33,10 @@ import org.springframework.web.servlet.view.RedirectView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
+
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -92,10 +93,14 @@ public class HomeController extends ParameterizableViewController {
             albums = getMostRecent(listOffset, listSize);
         } else if ("newest".equals(listType)) {
             albums = getNewest(listOffset, listSize);
+        } else if ("starred".equals(listType)) {
+            albums = getStarred(listOffset, listSize, user.getUsername());
         } else if ("random".equals(listType)) {
             albums = getRandom(listSize);
-        } else {
+        } else if ("alphabetical".equals(listType)) {
             albums = getAlphabetical(listOffset, listSize);
+        } else {
+            albums = Collections.emptyList();
         }
 
         Map<String, Object> map = new HashMap<String, Object>();
@@ -156,9 +161,20 @@ public class HomeController extends ParameterizableViewController {
             if (album != null) {
                 Date created = file.getCreated();
                 if (created == null) {
-                    created = file.getLastModified();
+                    created = file.getChanged();
                 }
                 album.setCreated(created);
+                result.add(album);
+            }
+        }
+        return result;
+    }
+
+    List<Album> getStarred(int offset, int count, String username) throws IOException {
+        List<Album> result = new ArrayList<Album>();
+        for (MediaFile file : mediaFileService.getStarredAlbums(offset, count, username)) {
+            Album album = createAlbum(file);
+            if (album != null) {
                 result.add(album);
             }
         }
@@ -189,6 +205,7 @@ public class HomeController extends ParameterizableViewController {
 
     private Album createAlbum(MediaFile file) {
         Album album = new Album();
+        album.setId(file.getId());
         album.setPath(file.getPath());
         try {
             resolveArtistAndAlbumTitle(album, file);
@@ -236,6 +253,7 @@ public class HomeController extends ParameterizableViewController {
     /**
      * Contains info for a single album.
      */
+    @Deprecated
     public static class Album {
         private String path;
         private String coverArtPath;
@@ -245,6 +263,15 @@ public class HomeController extends ParameterizableViewController {
         private Date lastPlayed;
         private Integer playCount;
         private Integer rating;
+        private int id;
+
+        public int getId() {
+            return id;
+        }
+
+        public void setId(int id) {
+            this.id = id;
+        }
 
         public String getPath() {
             return path;

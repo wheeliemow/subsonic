@@ -29,24 +29,21 @@ import org.springframework.util.*;
  */
 public class SavePlaylistCommand {
 
-    private Playlist playlist;
+    private PlayQueue playQueue;
     private String name;
-    private String suffix;
-    private String[] formats;
+    private final String username;
 
-    public SavePlaylistCommand(Playlist playlist) {
-        this.playlist = playlist;
-        name = StringUtils.stripFilenameExtension(playlist.getName());
-        suffix = StringUtils.getFilenameExtension(playlist.getName());
-        formats = new String[]{"m3u", "pls", "xspf"};
+    public SavePlaylistCommand(PlayQueue playQueue, String username) {
+        this.playQueue = playQueue;
+        this.username = username;
     }
 
-    public Playlist getPlaylist() {
-        return playlist;
+    public PlayQueue getPlayQueue() {
+        return playQueue;
     }
 
-    public void setPlaylist(Playlist playlist) {
-        this.playlist = playlist;
+    public void setPlayQueue(PlayQueue playQueue) {
+        this.playQueue = playQueue;
     }
 
     public String getName() {
@@ -57,19 +54,7 @@ public class SavePlaylistCommand {
         this.name = name;
     }
 
-    public String getSuffix() {
-        return suffix;
-    }
-
-    public void setSuffix(String suffix) {
-        this.suffix = suffix;
-    }
-
-    public String[] getFormats() {
-        return formats;
-    }
-
-    public void setFormats(String[] formats) {
-        this.formats = formats;
+    public String getUsername() {
+        return username;
     }
 }

@@ -57,6 +57,18 @@
     </c:forEach>
 </c:if>
 
+<c:if test="${not empty model.playlists}">
+    <h2 class="bgcolor1"><fmt:message key="left.playlists"/></h2>
+    <c:forEach items="${model.playlists}" var="playlist">
+        <p class="dense" style="padding-left:0.5em">
+            <sub:url value="playlist.view" var="playlistUrl">
+                <sub:param name="id" value="${playlist.id}"/>
+            </sub:url>
+            <a target="main" href="${playlistUrl}">${playlist.name}&nbsp;(${playlist.fileCount})</a>
+        </p>
+    </c:forEach>
+</c:if>
+
 <c:if test="${not empty model.radios}">
     <h2 class="bgcolor1"><fmt:message key="left.radio"/></h2>
     <c:forEach items="${model.radios}" var="radio">
@@ -107,7 +119,7 @@
     <p class="dense" style="padding-left:0.5em">
         <span title="${song.title}">
             <c:import url="playAddDownload.jsp">
-                <c:param name="path" value="${song.path}"/>
+                <c:param name="id" value="${song.id}"/>
                 <c:param name="playEnabled" value="${model.user.streamRole and not model.partyMode}"/>
                 <c:param name="addEnabled" value="${model.user.streamRole}"/>
                 <c:param name="downloadEnabled" value="${model.user.downloadRole and not model.partyMode}"/>

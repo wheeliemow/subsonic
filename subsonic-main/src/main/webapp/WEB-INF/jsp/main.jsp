@@ -9,6 +9,7 @@
         <meta http-equiv="refresh" content="180;URL=nowPlaying.view?">
     </c:if>
     <script type="text/javascript" src="<c:url value="/dwr/engine.js"/>"></script>
+    <script type="text/javascript" src="<c:url value="/dwr/interface/starService.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/prototype.js"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/scriptaculous.js?load=effects"/>"></script>
     <script type="text/javascript" src="<c:url value="/script/scripts.js"/>"></script>
@@ -70,6 +71,17 @@
         }
     }
 
+    function toggleStar(mediaFileId, imageId) {
+        if ($(imageId).src.indexOf("<spring:theme code="ratingOnImage"/>") != -1) {
+            $(imageId).src = "<spring:theme code="ratingOffImage"/>";
+            starService.unstar(mediaFileId);
+        }
+        else if ($(imageId).src.indexOf("<spring:theme code="ratingOffImage"/>") != -1) {
+            $(imageId).src = "<spring:theme code="ratingOnImage"/>";
+            starService.star(mediaFileId);
+        }
+    }
+
 </script>
 
 <c:if test="${model.updateNowPlaying}">
@@ -81,7 +93,16 @@
 </c:if>
 
 <h1>
-    <img src="<spring:theme code="nowPlayingImage"/>" alt="">
+    <a href="#" onclick="toggleStar(${model.dir.id}, 'starImage'); return false;">
+        <c:choose>
+            <c:when test="${not empty model.dir.starredDate}">
+                <img id="starImage" src="<spring:theme code="ratingOnImage"/>" alt="">
+            </c:when>
+            <c:otherwise>
+                <img id="starImage" src="<spring:theme code="ratingOffImage"/>" alt="">
+            </c:otherwise>
+        </c:choose>
+    </a>
 
     <c:forEach items="${model.ancestors}" var="ancestor">
         <sub:url value="main.view" var="ancestorUrl">
@@ -111,15 +132,11 @@
         <c:set var="needSep" value="true"/>
     </c:if>
 
-    <c:set var="path">
-        <sub:escapeJavaScript string="${model.dir.path}"/>
-    </c:set>
-
     <c:if test="${model.user.streamRole}">
         <c:if test="${needSep}">|</c:if>
-        <a href="javascript:noop()" onclick="top.playlist.onPlay('${path}');"><fmt:message key="main.playall"/></a> |
-        <a href="javascript:noop()" onclick="top.playlist.onPlayRandom('${path}', 10);"><fmt:message key="main.playrandom"/></a> |
-        <a href="javascript:noop()" onclick="top.playlist.onAdd('${path}');"><fmt:message key="main.addall"/></a>
+        <a href="javascript:noop()" onclick="top.playQueue.onPlay(${model.dir.id});"><fmt:message key="main.playall"/></a> |
+        <a href="javascript:noop()" onclick="top.playQueue.onPlayRandom(${model.dir.id}, 10);"><fmt:message key="main.playrandom"/></a> |
+        <a href="javascript:noop()" onclick="top.playQueue.onAdd(${model.dir.id});"><fmt:message key="main.addall"/></a>
         <c:set var="needSep" value="true"/>
     </c:if>
 
@@ -127,7 +144,7 @@
 
         <c:if test="${model.user.downloadRole}">
             <sub:url value="download.view" var="downloadUrl">
-                <sub:param name="path" value="${model.dir.path}"/>
+                <sub:param name="id" value="${model.dir.id}"/>
             </sub:url>
             <c:if test="${needSep}">|</c:if>
             <a href="${downloadUrl}"><fmt:message key="common.download"/></a>
@@ -136,7 +153,7 @@
 
         <c:if test="${model.user.coverArtRole}">
             <sub:url value="editTags.view" var="editTagsUrl">
-                <sub:param name="path" value="${model.dir.path}"/>
+                <sub:param name="id" value="${model.dir.id}"/>
             </sub:url>
             <c:if test="${needSep}">|</c:if>
             <a href="${editTagsUrl}"><fmt:message key="main.tags"/></a>
@@ -240,11 +257,13 @@
 
                 <tr style="margin:0;padding:0;border:0">
                     <c:import url="playAddDownload.jsp">
-                        <c:param name="path" value="${child.path}"/>
+                        <c:param name="id" value="${child.id}"/>
                         <c:param name="video" value="${child.video and model.player.web}"/>
                         <c:param name="playEnabled" value="${model.user.streamRole and not model.partyMode}"/>
                         <c:param name="addEnabled" value="${model.user.streamRole and (not model.partyMode or not child.directory)}"/>
                         <c:param name="downloadEnabled" value="${model.user.downloadRole and not model.partyMode}"/>
+                        <c:param name="starEnabled" value="true"/>
+                        <c:param name="starred" value="${not empty child.starredDate}"/>
                         <c:param name="asTable" value="true"/>
                     </c:import>
 
@@ -338,13 +357,12 @@
         <c:forEach items="${model.coverArts}" var="coverArt" varStatus="loopStatus">
             <div style="float:left; padding:5px">
                 <c:import url="coverArt.jsp">
-                    <c:param name="albumPath" value="${coverArt.parentFile.path}"/>
-                    <c:param name="albumName" value="${coverArt.parentFile.name}"/>
+                    <c:param name="albumId" value="${coverArt.id}"/>
+                    <c:param name="albumName" value="${coverArt.name}"/>
                     <c:param name="coverArtSize" value="${model.coverArtSize}"/>
-                    <c:param name="coverArtPath" value="${coverArt.path}"/>
-                    <c:param name="showLink" value="${coverArt.parentFile.path ne model.dir.path}"/>
-                    <c:param name="showZoom" value="${coverArt.parentFile.path eq model.dir.path}"/>
-                    <c:param name="showChange" value="${(coverArt.parentFile.path eq model.dir.path) and model.user.coverArtRole}"/>
+                    <c:param name="showLink" value="${coverArt ne model.dir}"/>
+                    <c:param name="showZoom" value="${coverArt eq model.dir}"/>
+                    <c:param name="showChange" value="${(coverArt eq model.dir) and model.user.coverArtRole}"/>
                     <c:param name="showCaption" value="true"/>
                     <c:param name="appearAfter" value="${loopStatus.count * 30}"/>
                 </c:import>
@@ -354,7 +372,7 @@
         <c:if test="${model.showGenericCoverArt}">
             <div style="float:left; padding:5px">
                 <c:import url="coverArt.jsp">
-                    <c:param name="albumPath" value="${model.dir.path}"/>
+                    <c:param name="albumId" value="${model.dir.id}"/>
                     <c:param name="coverArtSize" value="${model.coverArtSize}"/>
                     <c:param name="showLink" value="false"/>
                     <c:param name="showZoom" value="false"/>
