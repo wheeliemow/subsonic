@@ -1,58 +1,106 @@
 
-
 DONE IN 4.7
 -----------------
-Database-backed metadata.
-Serve generic cover art if failing to scale original.
-Use ffmpeg rather than lame for downsampling.
-  Retain track number when doing lame downsampling.
-  https://mail.google.com/mail/?ui=2&shva=1#inbox/134082ca4244da22
-Show scanning status.
-REST: Added "shareRole" to createUser
-REST API authentication & session
-  https://mail.google.com/mail/?shva=1#inbox/1341d1f45f89d15a
-  Update API doc
-  Wrong username/password with BASIC auth gives bad error message "401 LDAP authentication disabled for user"
-  wget --load-cookies cookies.txt --save-cookies cookies.txt --keep-session-cookies  "http://localhost:8080/rest/ping.view?u=admin&p=admin&v=1.6&c=android" -O -
-  wget --auth-no-challenge --http-user=admin --http-password=admin --load-cookies cookies.txt --save-cookies cookies.txt --keep-session-cookies  "http://localhost:8080/rest/ping.view?u=sindre&p=foo&v=1.6&c=android" -O -
-Fix JSON bug
-  https://mail.google.com/mail/?shva=1#inbox/134e21354999d203
-Added Polish translation, courtesy of Micha&#322; Kotas
-Added Catalan translation, courtesy of Josep Santaló.
-Bugfix: Fixed problem with players being associated to wrong users.
-Suppress content length estimation by default.
-Support HEAD request in StreamController
-  https://mail.google.com/mail/?ui=2&shva=1#inbox/134956a3b8ebe166
-Make it configurable to run as a different user than root in RPM.
-Build two versions of subsonic-agent.exe, one with run-as admin.
-REST: Added getAvatar.
-Email forgotten password, using subsonic backend service.  Reset password.
-Use media file IDs in rest api.
-Display warning if running as root user.
+Improvements to lyrics search, courtesy of Juan Carlos Díaz.
+Updated Dutch translation, courtesy of W. van der Heijden.
+Updated Swedish translation, courtesy of Fritte Jensen.
+Update Lucene index concurrently, not afterwards.
+Fixed missing db table indexes.
+Use Lucene for random song/album search.
+Never remove rows from media_file, set present=false instead.
+  Would make IDs really permanent
+  Simplify archiving stuff.
+  Don't need media_file_archive longer.  Copy from music_file_info when creating new rows.
+  Add lastScanned timestamp, use this to set stuff to not present after scanning.
+  Use "present" in album list and other queries. MAKE SURE THESE WORK FIRST!
+Support old-style IDs in REST API.
+Always use fast access mode in LeftController.
+  Refactor accessMode in MediaFileService.
+Create new album list type: alphabetic, starred
+Top Rated is broken.
+MetaDataParer.guessArtist etc: Don't return empty strings.
+Added "created" and "discNumber" to Child in REST xsd
+Update playCount, lastPlayed in Album table.
+Remove MediaFileService.getFirstChild.
+Create MediaType music, audiobook and podcast.
 
 TODO IN 4.7
 -----------------
-Use media file IDs in web interface etc.
+Add path to album table. Use to determine if songs belong to the same album.
+Review how to look up album for a song.
+Find nicer icons.
+Video player broken.
+Test REST video
+REST: Consider changing method names and type to *Id3.
+
+Eliminate HomeController.Album.
+Use id in web interface.
+
+Update subsonic-tools.
+Test upgrade 4.6->4.7
+Avoid long db startup. Reduce hsql log size?
+Blacklist abusers of my email.
+Update apps to include PlayBook version.
+
+  - Make playlist.jsp
+  - "Play queue -> Save as playlist" should create a new playlist with automatic name (Play Queue 10/4 22:43)
+  - "Add to playlist" should show list of existing playlists.
+  - "Add to new playlist" should create an automatic name.
+  - Improve usability when saving play queue as playlist e.g., if using an existing name.  Use ajax?
+  - Change "dir" usage in LoadPlaylistController.
+  - Rename RandomPlaylistController, playlist.jsp, PlaylistService.
+  - Update "present" when scanning media library?
+  - Initally import existing playlists if table is empty.
+  - Change appendPlaylist and loadPlaylist page, show meta data (owner, public/private, #songs, duration, created date, comment).
+  - Create new Playlists button in top frame.
+  - managePlaylist -> Play, Download, Export (m3u), Delete, Private/Shared
+  - Keep existing playlist role, but make it enabled by default.  Or remove it?
+  - REST support, add/removePlaylistUser.
+  - REST support, modify playlist metadata.
+  - Remove settings for playlist folder.
+  - Import/export feature.
+  - Retest wap and podcast playlist stuff.
+  - Playlist support in StreamController.
+  - Show message if nothing is starred.
+
+REST
+  - Document in api.jsp
+  - Add example links to demo server.
+  - Create example for videos.
+  - Test video streaming to Android.
+
+Shortcuts display ID3 names
+
+Encourage users to save email addresses, also for admin.  Explain why.
+Handle albums without artist. Don't create them?
+Bug: Playlist frame > Combo box > Selected songs > Add to playlist is broken.
+test that getRandomSongs doesn't return audiobooks and podcast.
+How to uniquely identify an album? Disregard artists, use all artists, or use one artist, or use Various Artists.
+Support comment and ratings for Album table.
+JSON exception with ampersand.
+minisub doesn't play.
+Test getPlaylist vs old-style IDs.
+Test that Fast access mode works.
+Move statistcs to About page?
+Include minisub
+    http://forum.subsonic.org/forum/viewtopic.php?f=8&t=7553
+
+Fix broken REST scrobbling, as reported by Ben.
+Don't throw NPE if requesting non-existent ID in REST.
+Optionally, create "Clean database" setting
+Never use fast access mode in podcast folder.
+Improve documentation of REST "download" method.
 Make it work with 64-bit Java 7.  Problem with exe4j?
-Test with a big collection on a network disk.
-Change random implementation.
-Better error message if media file not found.
+Better error message if media file not found, in main.jsp
 Document MediaFileService.
-Support per-artist cover art.
 Check file I/O.
 Optimize MediaFile getters.
-Measure time for media scanning, clean and incremental.
-Test performance of MusicFileDao.
-Test searching while createing lucene index
-Revisit MetaDataParser.isRoot()
 -
 Maintain track order for offline files in Android. Prepend track number for sortability?
 REST: Ensure that podcast dir is included.
 Star support
 
 Support ISO files.
-minisub
-  http://forum.subsonic.org/forum/viewtopic.php?f=8&t=7553
 wtv support   http://forum.subsonic.org/forum/viewtopic.php?f=2&t=7668
 Add "-map_meta_data 0:0" to transcoding?
   http://forum.subsonic.org/forum/viewtopic.php?f=3&t=3270&p=34114#p34114
@@ -126,21 +174,30 @@ DONE IN ANDROID 3.4
 Ensure readable text in notification when background is dark.
 Fix crash when using fast scrolling.
 Enable fast scrolling of playlists, search results and songs.
+Improve caching of artist list.
 
 TODO IN ANDROID 3.4
 --------------------
-Show artist list faster, check for invalid cache in background.
-
+Support Bluetooth play/pause buttons in ICS.
+Problem if underscore/dash in server name.
+  https://mail.google.com/mail/?shva=1#inbox/1365ef6ddc03e31a
+Music controls in notification.
+  https://mail.google.com/mail/?ui=2&shva=1#inbox/136242ab25baddad
+Holo theme
+  http://android-developers.blogspot.com/2012/01/holo-everywhere.html
+Update artist list in background.
+ICS theme
+  http://developer.android.com/design/index.html
+  http://forum.subsonic.org/forum/viewtopic.php?f=5&t=8497
+  https://mail.google.com/mail/?tab=cm#inbox/1344527f4abc11af
+  http://android-developers.blogspot.com/2012/01/say-goodbye-to-menu-button.html
+https://mail.google.com/mail/?tab=cm#inbox/135bb6c0d53edd42
 Browser / web page widget for Android
 
 Maintain track order for offline files.
 Check for lingering .partial files.
   https://mail.google.com/mail/?ui=2&shva=1#inbox/134082ca4244da22
 Don't pause on incoming call if RC.
-ICS theme
-  http://developer.android.com/design/index.html
-  http://forum.subsonic.org/forum/viewtopic.php?f=5&t=8497
-  https://mail.google.com/mail/?tab=cm#inbox/1344527f4abc11af
 PayPal integration
   https://www.x.com/developers/paypal/products/mobile-payment-libraries
 Change generic album art.
@@ -729,9 +786,9 @@ cd subsonic-assembly; mvn assembly:assembly; cd ..
 Deploy
 Check that correct local version is displayed.
 Upload files to SourceForge (in separate shell, REMEMBER TO CHANGE VERSION BELOW).
-  rsync -avP -e ssh subsonic-installer-windows/target/subsonic*-setup.exe  sindre_mehus,subsonic@frs.sourceforge.net:/home/frs/project/s/su/subsonic/subsonic/4.6/
-  rsync -avP -e ssh subsonic-assembly/target/subsonic* sindre_mehus,subsonic@frs.sourceforge.net:/home/frs/project/s/su/subsonic/subsonic/4.6/
-  rsync -avP -e ssh subsonic-installer-mac/target/subsonic*.pkg subsonic-installer-debian/target/subsonic*.deb subsonic-installer-rpm/target/subsonic*.rpm sindre_mehus,subsonic@frs.sourceforge.net:/home/frs/project/s/su/subsonic/subsonic/4.6/
+  rsync -avP -e ssh subsonic-installer-windows/target/subsonic*-setup.exe  sindre_mehus,subsonic@frs.sourceforge.net:/home/frs/project/s/su/subsonic/subsonic/4.7.beta1/
+  rsync -avP -e ssh subsonic-assembly/target/subsonic* sindre_mehus,subsonic@frs.sourceforge.net:/home/frs/project/s/su/subsonic/subsonic/4.7.beta1/
+  rsync -avP -e ssh subsonic-installer-mac/target/subsonic*.pkg subsonic-installer-debian/target/subsonic*.deb subsonic-installer-rpm/target/subsonic*.rpm sindre_mehus,subsonic@frs.sourceforge.net:/home/frs/project/s/su/subsonic/subsonic/4.7.beta1/
 
 Modify FRS properties
   https://sourceforge.net/projects/subsonic/files/subsonic/
@@ -742,7 +799,7 @@ Upload site (OLD):
 Upload site (NEW):
   rsync -avP -e ssh --exclude ".*" subsonic-site/src/main/webapp/  root@subsonic.org:/usr/local/jakarta/tomcat/webapps/pages/
 
-svn copy https://subsonic.svn.sourceforge.net/svnroot/subsonic/trunk https://subsonic.svn.sourceforge.net/svnroot/subsonic/tags/release-4.6 -m "Tagging 4.6"
+svn copy https://subsonic.svn.sourceforge.net/svnroot/subsonic/trunk https://subsonic.svn.sourceforge.net/svnroot/subsonic/tags/release-4.7.beta1 -m "Tagging 4.7.beta1"
 Register at freshmeat.
 Post message on forum.
 Update version number in pom.xml etc.
@@ -761,6 +818,10 @@ Upgrade Subsonic backend: CHANGE DATE BELOW
   scp subsonic-backend/target/subsonic-backend-*.war root@subsonic.org:/usr/local/jakarta/tomcat/webapps-2011-12-06/ROOT.war
   scp subsonic-main/target/subsonic.war              root@subsonic.org:/usr/local/jakarta/tomcat/webapps-2011-12-06/demo.war
   rsync -rlptDvP -e ssh --exclude .svn subsonic-site/src/main/webapp/  root@subsonic.org:/usr/local/jakarta/tomcat/webapps-2011-12-06/pages
+
+
+  Blacklist abusers of my email.
+
 
   Checkpoint database (db.view)
   ssh root@subsonic.org
@@ -894,9 +955,9 @@ Ogmunds vei 11
 0488 Oslo
 Norway
 
-Account number: 97223688407
 IBAN number: NO7297223688407
 SWIFT/BIC code: DNBANOKK
+Account number: 97223688407
 
 Bank address:
 DnB NOR

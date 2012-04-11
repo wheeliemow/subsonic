@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import net.sourceforge.subsonic.domain.MediaFile;
 import net.sourceforge.subsonic.service.MediaFileService;
+import net.sourceforge.subsonic.service.SearchService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.math.LongRange;
 import org.springframework.web.bind.ServletRequestBindingException;
@@ -39,7 +40,7 @@ import org.springframework.web.servlet.mvc.Controller;
 
 import net.sourceforge.subsonic.Logger;
 import net.sourceforge.subsonic.domain.Player;
-import net.sourceforge.subsonic.domain.Playlist;
+import net.sourceforge.subsonic.domain.PlayQueue;
 import net.sourceforge.subsonic.domain.TransferStatus;
 import net.sourceforge.subsonic.domain.User;
 import net.sourceforge.subsonic.domain.VideoTranscodingSettings;
@@ -47,7 +48,6 @@ import net.sourceforge.subsonic.io.PlaylistInputStream;
 import net.sourceforge.subsonic.io.RangeOutputStream;
 import net.sourceforge.subsonic.io.ShoutCastOutputStream;
 import net.sourceforge.subsonic.service.AudioScrobblerService;
-import net.sourceforge.subsonic.service.MediaScannerService;
 import net.sourceforge.subsonic.service.PlayerService;
 import net.sourceforge.subsonic.service.PlaylistService;
 import net.sourceforge.subsonic.service.SecurityService;
@@ -58,7 +58,7 @@ import net.sourceforge.subsonic.util.StringUtil;
 import net.sourceforge.subsonic.util.Util;
 
 /**
- * A controller which streams the content of a {@link Playlist} to a remote
+ * A controller which streams the content of a {@link net.sourceforge.subsonic.domain.PlayQueue} to a remote
  * {@link Player}.
  *
  * @author Sindre Mehus
@@ -75,6 +75,7 @@ public class StreamController implements Controller {
     private TranscodingService transcodingService;
     private AudioScrobblerService audioScrobblerService;
     private MediaFileService mediaFileService;
+    private SearchService searchService;
 
     public ModelAndView handleRequest(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
@@ -91,15 +92,15 @@ public class StreamController implements Controller {
             }
 
             // If "playlist" request parameter is set, this is a Podcast request. In that case, create a separate
-            // playlist (in order to support multiple parallel Podcast streams).
-            String playlistName = request.getParameter("playlist");
-            boolean isPodcast = playlistName != null;
+            // play queue (in order to support multiple parallel Podcast streams).
+            Integer playlistId = ServletRequestUtils.getIntParameter(request, "playlist");
+            boolean isPodcast = playlistId != null;
             if (isPodcast) {
-                Playlist playlist = new Playlist();
-                playlistService.loadPlaylist(playlist, playlistName);
-                player.setPlaylist(playlist);
-                Util.setContentLength(response, playlist.length());
-                LOG.info("Incoming Podcast request for playlist " + playlistName);
+                PlayQueue playQueue = new PlayQueue();
+                playQueue.addFiles(false, playlistService.getFilesInPlaylist(playlistId));
+                player.setPlayQueue(playQueue);
+                Util.setContentLength(response, playQueue.length());
+                LOG.info("Incoming Podcast request for playlist " + playlistId);
             }
 
             String contentType = StringUtil.getMimeType(request.getParameter("suffix"));
@@ -121,9 +122,9 @@ public class StreamController implements Controller {
             LongRange range = null;
 
             if (isSingleFile) {
-                Playlist playlist = new Playlist();
-                playlist.addFiles(true, file);
-                player.setPlaylist(playlist);
+                PlayQueue playQueue = new PlayQueue();
+                playQueue.addFiles(true, file);
+                player.setPlayQueue(playQueue);
 
                 if (!file.isVideo()) {
                     response.setIntHeader("ETag", file.getId());
@@ -171,7 +172,7 @@ public class StreamController implements Controller {
             status = statusService.createStreamStatus(player);
 
             in = new PlaylistInputStream(player, status, maxBitRate, preferredTargetFormat, videoTranscodingSettings, transcodingService,
-                    audioScrobblerService, mediaFileService);
+                    audioScrobblerService, mediaFileService, searchService);
             OutputStream out = RangeOutputStream.wrap(response.getOutputStream(), range);
 
             // Enabled SHOUTcast, if requested.
@@ -183,7 +184,7 @@ public class StreamController implements Controller {
                 response.setHeader("icy-name", "Subsonic");
                 response.setHeader("icy-genre", "Mixed");
                 response.setHeader("icy-url", "http://subsonic.org/");
-                out = new ShoutCastOutputStream(out, player.getPlaylist(), settingsService);
+                out = new ShoutCastOutputStream(out, player.getPlayQueue(), settingsService);
             }
 
             final int BUFFER_SIZE = 2048;
@@ -196,7 +197,7 @@ public class StreamController implements Controller {
                     return null;
                 }
 
-                if (player.getPlaylist().getStatus() == Playlist.Status.STOPPED) {
+                if (player.getPlayQueue().getStatus() == PlayQueue.Status.STOPPED) {
                     if (isPodcast || isSingleFile) {
                         break;
                     } else {
@@ -410,5 +411,9 @@ public class StreamController implements Controller {
 
     public void setMediaFileService(MediaFileService mediaFileService) {
         this.mediaFileService = mediaFileService;
+    }
+
+    public void setSearchService(SearchService searchService) {
+        this.searchService = searchService;
     }
 }

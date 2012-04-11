@@ -11,7 +11,19 @@
     </bean>
 
     <bean id="mediaFileDao" class="net.sourceforge.subsonic.dao.MediaFileDao">
-    <property name="daoHelper" ref="daoHelper"/>
+        <property name="daoHelper" ref="daoHelper"/>
+    </bean>
+
+    <bean id="artistDao" class="net.sourceforge.subsonic.dao.ArtistDao">
+        <property name="daoHelper" ref="daoHelper"/>
+    </bean>
+
+    <bean id="albumDao" class="net.sourceforge.subsonic.dao.AlbumDao">
+        <property name="daoHelper" ref="daoHelper"/>
+    </bean>
+
+    <bean id="playlistDao" class="net.sourceforge.subsonic.dao.PlaylistDao">
+        <property name="daoHelper" ref="daoHelper"/>
     </bean>
 
     <bean id="internetRadioDao" class="net.sourceforge.subsonic.dao.InternetRadioDao">
@@ -54,9 +66,9 @@
     <bean id="mediaFileService" class="net.sourceforge.subsonic.service.MediaFileService">
         <property name="securityService" ref="securityService"/>
         <property name="settingsService" ref="settingsService"/>
-        <property name="mediaScannerService" ref="mediaScannerService"/>
         <property name="mediaFileMemoryCache" ref="mediaFileMemoryCache"/>
         <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="albumDao" ref="albumDao"/>
         <property name="metaDataParserFactory" ref="metaDataParserFactory"/>
     </bean>
 
@@ -78,12 +90,16 @@
         <property name="settingsService" ref="settingsService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
         <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="artistDao" ref="artistDao"/>
+        <property name="albumDao" ref="albumDao"/>
         <property name="searchService" ref="searchService"/>
     </bean>
 
     <bean id="searchService" class="net.sourceforge.subsonic.service.SearchService">
         <property name="mediaFileService" ref="mediaFileService"/>
-        <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="settingsService" ref="settingsService"/>
+        <property name="artistDao" ref="artistDao"/>
+        <property name="albumDao" ref="albumDao"/>
     </bean>
 
     <bean id="networkService" class="net.sourceforge.subsonic.service.NetworkService" init-method="init">
@@ -98,9 +114,8 @@
     </bean>
 
     <bean id="playlistService" class="net.sourceforge.subsonic.service.PlaylistService">
-        <property name="settingsService" ref="settingsService"/>
-        <property name="securityService" ref="securityService"/>
-        <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="mediaFileDao" ref="mediaFileDao"/>
+        <property name="playlistDao" ref="playlistDao"/>
     </bean>
 
     <bean id="versionService" class="net.sourceforge.subsonic.service.VersionService"/>
@@ -182,12 +197,14 @@
         <property name="mediaScannerService" ref="mediaScannerService"/>
     </bean>
 
-    <bean id="ajaxPlaylistService" class="net.sourceforge.subsonic.ajax.PlaylistService">
+    <bean id="ajaxPlayQueueService" class="net.sourceforge.subsonic.ajax.PlayQueueService">
         <property name="playerService" ref="playerService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+        <property name="mediaFileDao" ref="mediaFileDao"/>
         <property name="jukeboxService" ref="jukeboxService"/>
         <property name="transcodingService" ref="transcodingService"/>
         <property name="settingsService" ref="settingsService"/>
+        <property name="securityService" ref="securityService"/>
     </bean>
 
     <bean id="ajaxLyricsService" class="net.sourceforge.subsonic.ajax.LyricsService"/>
@@ -195,6 +212,11 @@
     <bean id="ajaxCoverArtService" class="net.sourceforge.subsonic.ajax.CoverArtService">
         <property name="securityService" ref="securityService"/>
         <property name="mediaFileService" ref="mediaFileService"/>
+    </bean>
+
+    <bean id="ajaxStarService" class="net.sourceforge.subsonic.ajax.StarService">
+        <property name="securityService" ref="securityService"/>
+        <property name="mediaFileDao" ref="mediaFileDao"/>
     </bean>
 
     <bean id="ajaxTagService" class="net.sourceforge.subsonic.ajax.TagService">

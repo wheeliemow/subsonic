@@ -21,7 +21,7 @@
 </c:if>
 
 <h2>
-    <c:forTokens items="random newest highest frequent recent users" delims=" " var="cat" varStatus="loopStatus">
+    <c:forTokens items="random newest starred highest frequent recent alphabetical users" delims=" " var="cat" varStatus="loopStatus">
         <c:if test="${loopStatus.count > 1}">&nbsp;|&nbsp;</c:if>
         <sub:url var="url" value="home.view">
             <sub:param name="listSize" value="${model.listSize}"/>
@@ -83,10 +83,9 @@
                 <table>
                     <tr><td>
                             <c:import url="coverArt.jsp">
-                                <c:param name="albumPath" value="${album.path}"/>
+                                <c:param name="albumId" value="${album.id}"/>
                                 <c:param name="albumName" value="${album.albumTitle}"/>
                                 <c:param name="coverArtSize" value="110"/>
-                                <c:param name="coverArtPath" value="${album.coverArtPath}"/>
                                 <c:param name="showLink" value="true"/>
                                 <c:param name="showZoom" value="false"/>
                                 <c:param name="showChange" value="false"/>

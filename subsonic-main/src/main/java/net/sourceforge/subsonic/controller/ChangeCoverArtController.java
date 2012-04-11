@@ -24,6 +24,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.springframework.web.bind.ServletRequestUtils;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.ParameterizableViewController;
 
@@ -42,23 +43,20 @@ public class ChangeCoverArtController extends ParameterizableViewController {
     @Override
     protected ModelAndView handleRequestInternal(HttpServletRequest request, HttpServletResponse response) throws Exception {
 
-        String path = request.getParameter("path");
+        int id = ServletRequestUtils.getRequiredIntParameter(request, "id");
         String artist = request.getParameter("artist");
         String album = request.getParameter("album");
-        MediaFile dir = mediaFileService.getMediaFile(path);
+        MediaFile dir = mediaFileService.getMediaFile(id);
 
-        MediaFile child = mediaFileService.getFirstChildOf(dir);
-        if (child != null) {
-            if (artist == null) {
-                artist = child.getArtist();
-            }
-            if (album == null) {
-                album = child.getAlbumName();
-            }
+        if (artist == null) {
+            artist = dir.getArtist();
+        }
+        if (album == null) {
+            album = dir.getAlbumName();
         }
 
         Map<String, Object> map = new HashMap<String, Object>();
-        map.put("path", path);
+        map.put("id", id);
         map.put("artist", artist);
         map.put("album", album);
 
